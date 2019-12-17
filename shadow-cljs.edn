@@ -1,0 +1,15 @@
+{:deps   {:aliases [:cljs :test]}
+ :builds {:app {:target        :browser
+                :output-dir    "resources/public/js"
+                :modules
+                {:main   {:init-fn    fullstack-explore.app/init}}
+                :devtools
+                {:http-port  8000
+                 :http-root  "resources/public"
+                 :after-load  fullstack-explore.app/after-load
+                 :preloads [shadow.remote.runtime.cljs.browser]}}
+          :test {:target :browser-test
+                 :test-dir "resources/public/js/test"
+                 :devtools
+                 {:http-port 8021
+                  :http-root "resources/public/js/test"}}}}
