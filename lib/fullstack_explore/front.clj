@@ -59,38 +59,79 @@
   (arg->query+ident
     '{:a/keys [^:ident a ^B b ^{:query [:c/a]} c]}))
 
-(defn defc* [sym binding & body]
+(defn defc* [sym binding opt-map & body]
   (let [arg   (first binding)
-        {:keys [ident query]} (arg->query+ident arg)
-        qsym  (symbol (name (ns-name *ns*)) (name sym))
-        idt-sym (gensym "idt")]
+
+        {:keys [ident query]}
+        (arg->query+ident arg)
+
+        ident (if ident ident (:ident opt-map))
+
+        qsym  (symbol (name (ns-name *ns*)) (name sym))]
     `(let [query# (fn [] ~query)
            ident# ~ident
            render#
            (fn ~sym
              [prop#]
-             (if (fullstack-explore.front/is-ident? prop#)
+             (cond
+               (fullstack-explore.front/is-ident? prop#)
                (let [idt# prop#
                      reaction# (reagent.ratom/reaction
                                  (fullstack-explore.front/fetch-db
                                    idt#
                                    ~query))]
-                 (fn [~idt-sym]
+                 (fn []
                    (let [~(first binding) @reaction#]
                      ~@body)))
+
+               prop#
                (let [~(first binding) prop#]
-                 ~@body)))]
+                 ~@body)
+
+               :else
+               (let [idt# ~ident
+                     reaction# (reagent.ratom/reaction
+                                 (fullstack-explore.front/fetch-db
+                                   idt#
+                                   ~query))]
+                 (fn []
+                   (let [~(first binding) @reaction#]
+                     ~@body)))))]
        (def ~sym
          (with-meta render#
            {:query query#
             :ident ident#})))))
 
-(defmacro defc [sym binding & body]
-  (apply defc* sym binding body))
+(s/def ::defc-args
+  (s/cat
+    :sym symbol?
+    :binding vector?
+    :opt-map (s/? map?)
+    :body (s/* any?)))
+
+(defmacro defc [& args]
+  (let [{:keys [sym binding opt-map body]} (s/conform ::defc-args args)]
+    (apply defc* sym binding opt-map body)))
 
 (comment
+  (s/conform ::defc-args
+    '(person [{:person/keys [^:ident id name]}]
+       {:ident :person/id}
+      [:div
+        [:div "id:" id]
+        [:div "name:" name]]))
+
   (clojure.pprint/pprint
-    (defc* 'person '[{:person/keys [^:ident id name]} ident]
+    (defc* 'root2 '[{:root/keys [people] :as props}]
+      {:ident [:component/id :root]}
+      '[:div
+       (for [p people]
+         ^{:key p}
+         [person p])]))
+
+  (clojure.pprint/pprint
+    (defc* 'person '[{:person/keys [id name]} ident]
+      {:ident [:component/id :root]}
       '[:div
         [:div "id:" id]
         [:div "name:" name]])))

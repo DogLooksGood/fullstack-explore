@@ -1,11 +1,10 @@
-{:paths ["src" "resources"]
+{:paths ["src" "lib" "resources"]
 
  :deps
  {org.clojure/clojure    {:mvn/version "1.10.1"}
   aleph                  {:mvn/version "0.4.6"}
   seancorfield/next.jdbc {:mvn/version "1.0.10"}
   com.h2database/h2      {:mvn/version "1.4.199"}
-  datascript             {:mvn/version "0.18.7"}
   mount                  {:mvn/version "0.1.16"}
   org.clojure/test.check {:mvn/version "0.10.0"}}
 
